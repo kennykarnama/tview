@@ -62,6 +62,9 @@ type Application struct {
 	// (screen.Init() and draw() will be called implicitly). A value of nil will
 	// stop the application.
 	screenReplacement chan tcell.Screen
+
+	//stopFunc defines custom function to close the application
+	stopFunc []func()
 }
 
 // NewApplication creates and returns a new application.
@@ -225,7 +228,12 @@ EventLoop:
 
 				// Ctrl-C closes the application.
 				if event.Key() == tcell.KeyCtrlC {
-					a.Stop()
+					if len(a.stopFunc) > 0 {
+						a.stopFunc[0]()
+					} else {
+						a.Stop()
+					}
+
 				}
 
 				// Pass other key events to the currently focused primitive.
@@ -259,6 +267,14 @@ EventLoop:
 	a.screen = nil
 
 	return nil
+}
+
+//HandleStop provides the ability to implement custom
+//stop function
+func (a *Application) HandleStop(stop func()) {
+	var s []func()
+	s = append(s, stop)
+	a.stopFunc = s
 }
 
 // Stop stops the application, causing Run() to return.
